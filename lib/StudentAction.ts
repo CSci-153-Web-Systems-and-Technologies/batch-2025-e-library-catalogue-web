@@ -80,3 +80,94 @@ export async function placeHold(bookId: string) {
   revalidatePath('/protected/dashboard');
   return { success: true };
 }
+
+export async function getStudentStats(userId: string) {
+  const supabase = await createClient();
+
+  const { count: borrowedCount } = await supabase
+    .from('borrowings')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'borrowed');
+
+  const { count: reservedCount } = await supabase
+    .from('reservations')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'pending');
+
+  const { count: readCount } = await supabase
+    .from('borrowings')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'returned');
+
+  return {
+    currentlyBorrowed: borrowedCount || 0,
+    activeReservations: reservedCount || 0,
+    booksRead: readCount || 0
+  };
+}
+
+export async function getStudentActivity(userId: string) {
+  const supabase = await createClient();
+
+  const { data: reservations } = await supabase
+    .from('reservations')
+    .select('*, book:book(Title, Author, "Genre (Subject)")')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  const { data: borrowings } = await supabase
+    .from('borrowings')
+    .select('*, book:book(Title, Author, "Genre (Subject)")')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  interface RawReservation {
+    created_at: string;
+    status: string;
+    book: { Title: string; Author: string; "Genre (Subject)": string } | null;
+  }
+
+  interface RawBorrowing {
+    created_at: string;
+    status: string;
+    book: { Title: string; Author: string; "Genre (Subject)": string } | null;
+    due_date?: string;
+  }
+
+
+  const activityList = [
+    ...(reservations || []).map((r) => {
+        const item = r as unknown as RawReservation;
+        return {
+            id: `res-${r.id}`,
+            bookId: r.book_id,
+            bookTitle: item.book?.Title || 'Unknown Title',
+            bookAuthor: item.book?.Author || 'Unknown Author',
+            bookGenre: item.book?.["Genre (Subject)"] || 'General',
+            status: 'reserved' as const,
+            date: new Date(item.created_at).toLocaleDateString(),
+            timestamp: new Date(item.created_at).getTime()
+        };
+    }),
+    ...(borrowings || []).map((b) => {
+        const item = b as unknown as RawBorrowing;
+        return {
+            id: `bor-${b.id}`,
+            bookId: b.book_id,
+            bookTitle: item.book?.Title || 'Unknown Title',
+            bookAuthor: item.book?.Author || 'Unknown Author',
+            bookGenre: item.book?.["Genre (Subject)"] || 'General',
+            status: (item.status === 'returned' ? 'returned' : 'borrowed') as 'returned' | 'borrowed',
+            date: item.due_date ? new Date(item.due_date).toLocaleDateString() : new Date(item.created_at).toLocaleDateString(),
+            timestamp: new Date(item.created_at).getTime()
+        };
+    })
+  ];
+
+  return activityList.sort((a, b) => b.timestamp - a.timestamp);
+}
