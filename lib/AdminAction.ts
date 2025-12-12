@@ -31,3 +31,41 @@ export async function addBook(formData: FormData) {
   revalidatePath("/admin/books");
   redirect("/admin/books");
 }
+
+export async function getAllBooks(page: number = 1, limit: number = 5, search: string = '') {
+  const supabase = await createClient();
+  
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  let query = supabase
+    .from('book')
+    .select('*', { count: 'exact' }) 
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (search) {
+    query = query.or(`Title.ilike.%${search}%,Author.ilike.%${search}%`);
+  }
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    console.error("Error fetching books:", error);
+    return { books: [], totalPages: 0 };
+  }
+
+  const books = (data as BookRow[]).map((book) => ({
+    id: book.id,
+    title: book.Title || 'Untitled', 
+    author: book.Author || 'Unknown',
+    genre: book["Genre (Subject)"] || 'Uncategorized',
+    location: book["Location (Call Number)"] || 'Unknown',
+    isbn: book["ISBN-13"] || 0,
+    status: book.status || 'available'
+  }));
+
+  const totalPages = count ? Math.ceil(count / limit) : 0;
+
+  return { books, totalPages };
+}
