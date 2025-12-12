@@ -9,7 +9,6 @@ export default function NotificationsTab({ notifications = [] }: { notifications
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
       
-
       <Card className="border-gray-100 shadow-sm bg-white">
         <CardHeader className="pb-4">
           <CardTitle>Notification Preferences</CardTitle>
