@@ -40,3 +40,17 @@ export interface ActivityRecord {
 export interface DashboardContentProps {
   books: Book[];
 }
+export interface DashboardWrapperProps {
+  email: string;
+  userId: string;
+  booksResponse: BooksResponse;
+}
+export const PAGE_SIZE = 12;
+
+export interface BooksResponse {
+  books: Book[];
+  currentPage: number;
+  totalPages: number;
+  totalBooks: number;
+  error?: string;
+}
