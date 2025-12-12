@@ -119,7 +119,7 @@ export function FilterModal({
               </Button>
               <Button 
                 type="submit"
-                className="bg-accent-teal hover:bg-teal-700 text-white shadow-sm"
+               className="bg-teal-600 hover:bg-teal-700 text-white shadow-sm"
               >
                 Apply Filters
               </Button>

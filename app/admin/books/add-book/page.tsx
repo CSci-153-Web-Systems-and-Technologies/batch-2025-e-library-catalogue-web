@@ -94,7 +94,6 @@ export default function AddBookPage() {
             </div>
           </div>
 
-          {/* Row 3: Location */}
           <div className="space-y-2">
             <label htmlFor="location" className="text-sm font-bold text-slate-700 flex items-center gap-2">
               <MapPin className="h-4 w-4 text-red-500" /> Library Location
@@ -109,7 +108,7 @@ export default function AddBookPage() {
             />
           </div>
 
-          {/* Row 4: Description */}
+       
           <div className="space-y-2">
             <label htmlFor="description" className="text-sm font-bold text-slate-700 flex items-center gap-2">
               <AlignLeft className="h-4 w-4 text-gray-500" /> Description / Notes
@@ -123,7 +122,7 @@ export default function AddBookPage() {
             ></textarea>
           </div>
 
-
+          
           <div className="pt-4 flex items-center justify-end gap-3 border-t border-gray-100">
             <Link 
               href="/admin/books"
