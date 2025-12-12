@@ -36,3 +36,7 @@ export interface ActivityRecord {
   date: string; 
   image_url?: string;
 }
+
+export interface DashboardContentProps {
+  books: Book[];
+}
