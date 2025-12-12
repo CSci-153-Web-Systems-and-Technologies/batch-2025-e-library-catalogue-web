@@ -196,3 +196,27 @@ export async function updateReservationStatus(id: string, newStatus: 'fulfilled'
   revalidatePath('/admin/borrowed'); 
   revalidatePath('/protected/dashboard');
 }
+export async function updateProfile(formData: FormData) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const fullName = formData.get("fullName") as string;
+  
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      full_name: fullName,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', user.id);
+
+  if (error) {
+    console.error("Error updating profile:", error);
+    throw new Error("Failed to update profile");
+  }
+
+  revalidatePath('/admin');
+  redirect('/admin/settings');
+}
