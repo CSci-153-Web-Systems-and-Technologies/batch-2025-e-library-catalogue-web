@@ -220,3 +220,120 @@ export async function updateProfile(formData: FormData) {
   revalidatePath('/admin');
   redirect('/admin/settings');
 }
+export async function getAdminStats() {
+  const supabase = await createClient();
+
+  const { count: totalBooks } = await supabase
+    .from('book')
+    .select('*', { count: 'exact', head: true });
+
+  const { count: totalUsers } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('role', 'member');
+
+  const { count: activeReservations } = await supabase
+    .from('reservations')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
+
+  const { count: borrowedBooks } = await supabase
+    .from('borrowings')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'borrowed');
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const { count: newBooks } = await supabase
+    .from('book')
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', thirtyDaysAgo.toISOString());
+
+  const { count: newUsers } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('role', 'member')
+    .gte('created_at', thirtyDaysAgo.toISOString());
+
+  return {
+    totalBooks: totalBooks || 0,
+    totalUsers: totalUsers || 0,
+    activeReservations: activeReservations || 0,
+    borrowedBooks: borrowedBooks || 0,
+    newBooks: newBooks || 0,
+    newUsers: newUsers || 0,
+  };
+}
+export async function getRecentActivity() {
+  const supabase = await createClient();
+
+  const { data: reservations } = await supabase
+    .from('reservations')
+    .select(`
+      created_at,
+      user:profiles(full_name, email),
+      book:book(Title)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  const { data: borrowings } = await supabase
+    .from('borrowings')
+    .select(`
+      created_at,
+      status,
+      user:profiles(full_name, email),
+      book:book(Title)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+
+  interface ActivityItem {
+    created_at: string;
+    user: { full_name: string; email: string } | null;
+    book: { Title: string } | null;
+    status?: string;
+  }
+
+  const activities = [
+    ...(reservations || []).map((r: unknown) => {
+      const res = r as ActivityItem;
+      return {
+        type: 'reserved',
+        user: res.user?.full_name || res.user?.email?.split('@')[0] || 'Unknown User',
+        book: res.book?.Title || 'Unknown Book',
+        time: new Date(res.created_at),
+      };
+    }),
+    ...(borrowings || []).map((b: unknown) => {
+      const bor = b as ActivityItem;
+      return {
+        type: bor.status === 'returned' ? 'returned' : 'borrowed',
+        user: bor.user?.full_name || bor.user?.email?.split('@')[0] || 'Unknown User',
+        book: bor.book?.Title || 'Unknown Book',
+        time: new Date(bor.created_at),
+      };
+    })
+  ];
+
+  return activities
+    .sort((a, b) => b.time.getTime() - a.time.getTime())
+    .slice(0, 5)
+    .map(act => ({
+      ...act,
+      timeAgo: getTimeAgo(act.time)
+    }));
+}
+
+function getTimeAgo(date: Date) {
+  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+  let interval = seconds / 3600;
+  if (interval > 1) return Math.floor(interval) + " hours ago";
+  interval = seconds / 60;
+  if (interval > 1) return Math.floor(interval) + " minutes ago";
+  return Math.floor(seconds) + " seconds ago";
+}
+
+
