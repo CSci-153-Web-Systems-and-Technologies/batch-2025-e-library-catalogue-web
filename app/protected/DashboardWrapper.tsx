@@ -189,7 +189,7 @@ export default function DashboardWrapper({ email, userId, booksResponse }: Dashb
     return (
         <div className="flex flex-col min-h-screen">
           <div className="sticky top-0 z-50">
-            <DashboardNavBar 
+             <DashboardNavBar 
               email={email}
               userId={userId}
               onMobileSearchToggle={() => {}} 
@@ -211,7 +211,7 @@ export default function DashboardWrapper({ email, userId, booksResponse }: Dashb
   return (
     <div className="flex flex-col min-h-screen">
       <div className="sticky top-0 z-50">
-        <DashboardNavBar 
+          <DashboardNavBar 
           email={email}
           userId={userId}
           onMobileSearchToggle={toggleMobileSearch}
