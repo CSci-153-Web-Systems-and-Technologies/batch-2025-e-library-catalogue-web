@@ -69,3 +69,34 @@ export async function getAllBooks(page: number = 1, limit: number = 5, search: s
 
   return { books, totalPages };
 }
+export async function getBorrowedBooks() {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .from('borrowings')
+    .select(`
+      id,
+      status,
+      borrow_date,
+      due_date,
+      user:profiles(email, full_name),
+      book:book(Title)
+    `)
+    .eq('status', 'borrowed')
+    .order('due_date', { ascending: true }); 
+
+  if (error) {
+    console.error("Error fetching borrowings:", error);
+    return [];
+  }
+  
+  return (data as unknown as BorrowingRow[]).map((item) => ({
+    id: item.id,
+    bookTitle: item.book?.Title || "Unknown Book",
+    userEmail: item.user?.email || "Unknown User",
+    userName: item.user?.full_name || "N/A",
+    borrowDate: new Date(item.borrow_date).toLocaleDateString(),
+    dueDate: new Date(item.due_date).toLocaleDateString(),
+    status: item.status
+  }));
+}
