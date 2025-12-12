@@ -10,3 +10,12 @@ export interface Book {
   description: string;
   status: BookStatus;
 }
+
+export interface FilterModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onApply: (filters: FilterState) => void;
+  initialGenre?: string;
+  initialSort?: string;
+}
+
