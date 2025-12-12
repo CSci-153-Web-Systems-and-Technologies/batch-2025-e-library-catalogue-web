@@ -192,3 +192,31 @@ export async function updatePassword(formData: FormData) {
 
   revalidatePath('/protected/settings');
 }
+export async function updateStudentProfile(formData: FormData) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const firstName = formData.get("firstName") as string;
+  const lastName = formData.get("lastName") as string;
+  const avatarUrl = formData.get("avatarUrl") as string; 
+  
+  const fullName = `${firstName} ${lastName}`.trim();
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      full_name: fullName,
+      avatar_url: avatarUrl,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', user.id);
+
+  if (error) {
+    console.error("Profile update error:", error);
+    throw new Error("Failed to update profile");
+  }
+
+  revalidatePath('/protected/settings');
+}
