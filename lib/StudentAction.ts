@@ -171,3 +171,24 @@ export async function getStudentActivity(userId: string) {
 
   return activityList.sort((a, b) => b.timestamp - a.timestamp);
 }
+export async function updatePassword(formData: FormData) {
+  const supabase = await createClient();
+  
+  const password = formData.get("password") as string;
+  const confirmPassword = formData.get("confirmPassword") as string;
+
+  if (password !== confirmPassword) {
+    throw new Error("Passwords do not match");
+  }
+
+  const { error } = await supabase.auth.updateUser({ 
+    password: password 
+  });
+
+  if (error) {
+    console.error("Error updating password:", error);
+    throw new Error("Failed to update password");
+  }
+
+  revalidatePath('/protected/settings');
+}
