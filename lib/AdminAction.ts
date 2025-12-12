@@ -100,3 +100,99 @@ export async function getBorrowedBooks() {
     status: item.status
   }));
 }
+export async function getReservations() {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .from('reservations')
+    .select(`
+      id,
+      status,
+      reservation_date,
+      created_at,
+      user:profiles(email, full_name),
+      book:book(Title)
+    `)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error("Error fetching reservations:", error);
+    return [];
+  }
+  
+  return (data as unknown as ReservationRow[]).map((res) => ({
+    id: res.id,
+    bookTitle: res.book?.Title || "Unknown Book",
+    userEmail: res.user?.email || "Unknown User",
+    userName: res.user?.full_name || res.user?.email?.split('@')[0] || "N/A",
+    reserveDate: new Date(res.created_at).toLocaleDateString(),
+    requestedDate: new Date(res.reservation_date).toLocaleDateString(),
+    status: res.status
+  }));
+}
+
+export async function updateReservationStatus(id: string, newStatus: 'fulfilled' | 'cancelled') {
+  const supabase = await createClient();
+
+  const { data: reservation } = await supabase
+    .from('reservations')
+    .select('*, book:book(Title)')
+    .eq('id', id)
+    .single();
+
+  if (!reservation) return { error: "Reservation not found" };
+
+  const { error: updateError } = await supabase
+    .from('reservations')
+    .update({ status: newStatus })
+    .eq('id', id);
+
+  if (updateError) {
+    console.error(`Error updating reservation ${id}:`, updateError);
+    return { error: "Failed to update reservation status" };
+  }
+
+  if (newStatus === 'fulfilled') {
+    const borrowDate = new Date();
+    const dueDate = new Date();
+    dueDate.setDate(borrowDate.getDate() + 7); 
+
+    const { error: borrowError } = await supabase.from('borrowings').insert({
+      user_id: reservation.user_id,
+      book_id: reservation.book_id,
+      borrow_date: borrowDate.toISOString(),
+      due_date: dueDate.toISOString(),
+      status: 'borrowed'
+    });
+
+    if (borrowError) {
+      console.error("Error creating borrowing record:", borrowError);
+      return { error: "Reservation updated, but failed to create borrowing record." };
+    }
+
+    const { error: bookError } = await supabase
+      .from('book')
+      .update({ status: 'borrowed' })
+      .eq('id', reservation.book_id);
+
+    if (bookError) {
+      console.error("Error updating book status:", bookError);
+    }
+  }
+
+  const message = newStatus === 'fulfilled' 
+    ? `Your reservation for "${reservation.book?.Title}" has been processed. You have borrowed this book until ${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()}.`
+    : `We're sorry. Your reservation for "${reservation.book?.Title}" has been declined.`;
+
+  await supabase.from('notifications').insert({
+    user_id: reservation.user_id,
+    title: newStatus === 'fulfilled' ? 'Book Borrowed' : 'Reservation Declined',
+    message: message,
+    is_read: false
+  });
+
+  revalidatePath('/admin/reservations');
+  revalidatePath('/admin/borrowed'); 
+  revalidatePath('/protected/dashboard');
+}
