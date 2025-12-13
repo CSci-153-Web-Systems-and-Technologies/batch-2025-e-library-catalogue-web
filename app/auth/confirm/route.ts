@@ -1,27 +1,22 @@
 import { createClient } from '@/lib/server'
-import { type EmailOtpType } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
-import { type NextRequest } from 'next/server'
+import { NextRequest } from 'next/server'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
-  const token_hash = searchParams.get('token_hash')
-  const type = searchParams.get('type') as EmailOtpType | null
-  const _next = searchParams.get('next')
-  const next = _next?.startsWith('/') ? _next : '/'
+  const code = searchParams.get('code')
 
-  if (token_hash && type) {
-    const supabase = await createClient()
-
-    const { error } = await supabase.auth.verifyOtp({
-      type,
-      token_hash,
-    })
-    if (!error) {
-      redirect('/auth/login?message=Your email has been successfully verified. You can now log in.')
-    } else {
-      redirect(`/auth/error?error=${error?.message}`)
-    }
+  if (!code) {
+    redirect('/auth/error?error=Missing confirmation code')
   }
-  redirect(`/auth/error?error=No token hash or type`)
+
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+  if (error) {
+    redirect(`/auth/error?error=${encodeURIComponent(error.message)}`)
+  }
+
+  redirect('/auth/login?message=Email verified successfully')
 }
