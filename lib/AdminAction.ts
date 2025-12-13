@@ -336,4 +336,65 @@ function getTimeAgo(date: Date) {
   return Math.floor(seconds) + " seconds ago";
 }
 
+export async function markBookReturned(formData: FormData) {
+  const supabase = await createClient();
 
+  const borrowingId = formData.get("borrowingId") as string;
+  if (!borrowingId) throw new Error("Missing borrowing ID");
+
+  
+  const { data: borrowing, error: fetchError } = await supabase
+    .from("borrowings")
+    .select("id, book_id, status")
+    .eq("id", borrowingId)
+    .single();
+
+  if (fetchError || !borrowing) {
+    console.error("Fetch error:", fetchError);
+    throw new Error(`Borrowing record not found: ${fetchError?.message || 'Unknown error'}`);
+  }
+
+  if (borrowing.status === "returned") {
+    throw new Error("This book has already been returned");
+  }
+
+
+  const { error: borrowError } = await supabase
+    .from("borrowings")
+    .update({
+      status: "returned",
+      return_date: new Date().toISOString(),
+    })
+    .eq("id", borrowingId);
+
+  if (borrowError) {
+    console.error("Borrowing update error details:", {
+      message: borrowError.message,
+      details: borrowError.details,
+      hint: borrowError.hint,
+      code: borrowError.code,
+    });
+    throw new Error(`Failed to update borrowing status: ${borrowError.message}`);
+  }
+
+  const { error: bookError } = await supabase
+    .from("book")
+    .update({ status: "available" })
+    .eq("id", borrowing.book_id);
+
+  if (bookError) {
+    console.error("Book update error details:", {
+      message: bookError.message,
+      details: bookError.details,
+      hint: bookError.hint,
+      code: bookError.code,
+    });
+    throw new Error(`Failed to update book status: ${bookError.message}`);
+  }
+
+  revalidatePath("/admin/borrowed");
+  revalidatePath("/admin/books");
+  revalidatePath("/protected/dashboard");
+  
+  return { success: true };
+}
