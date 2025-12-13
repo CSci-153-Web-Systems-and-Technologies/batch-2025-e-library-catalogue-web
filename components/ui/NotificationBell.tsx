@@ -13,10 +13,18 @@ export default function NotificationBell({ userId }: { userId: string }) {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const supabase = createClient();
+  const [mounted, setMounted] = useState(false);
 
+  // Prevent hydration mismatch by only rendering after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
+    if (!userId || !mounted) return;
+
+    const supabase = createClient();
+
     const fetchNotifs = async () => {
       const { data } = await supabase
         .from("notifications")
@@ -31,14 +39,18 @@ export default function NotificationBell({ userId }: { userId: string }) {
       }
     };
 
-    if (userId) fetchNotifs();
-
+    fetchNotifs();
 
     const channel = supabase
       .channel("student-notifs")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+        { 
+          event: "INSERT", 
+          schema: "public", 
+          table: "notifications", 
+          filter: `user_id=eq.${userId}` 
+        },
         (payload) => {
           setNotifications((prev) => [payload.new, ...prev]);
           setUnreadCount((prev) => prev + 1);
@@ -49,10 +61,10 @@ export default function NotificationBell({ userId }: { userId: string }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
-
+  }, [userId, mounted]);
 
   const markRead = async (id: string) => {
+    const supabase = createClient();
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     );
@@ -60,10 +72,21 @@ export default function NotificationBell({ userId }: { userId: string }) {
     await supabase.from("notifications").update({ is_read: true }).eq("id", id);
   };
 
+  // Don't render until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <button 
+        className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors outline-none"
+        title="Notifications"
+        disabled
+      >
+        <Bell className="h-6 w-6" />
+      </button>
+    );
+  }
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
-      
-     
       <PopoverTrigger asChild>
         <button 
           className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors outline-none active:scale-95 duration-200"
@@ -71,17 +94,13 @@ export default function NotificationBell({ userId }: { userId: string }) {
         >
           <Bell className="h-6 w-6" />
           
-         
           {unreadCount > 0 && (
             <span className="absolute top-2 right-2.5 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
           )}
         </button>
       </PopoverTrigger>
       
-      
       <PopoverContent align="end" className="w-80 p-0 rounded-xl shadow-xl border-gray-100 bg-white">
-        
-    
         <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center bg-gray-50/50 rounded-t-xl">
           <h4 className="font-bold text-sm text-gray-900">Notifications</h4>
           {unreadCount > 0 && (
@@ -91,11 +110,8 @@ export default function NotificationBell({ userId }: { userId: string }) {
           )}
         </div>
         
-       
         <div className="max-h-[300px] overflow-y-auto min-h-[100px]">
           {notifications.length === 0 ? (
-            
-          
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="h-10 w-10 bg-gray-50 rounded-full flex items-center justify-center mb-3">
                 <Bell className="h-5 w-5 text-gray-300" />
@@ -103,9 +119,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
               <p className="text-sm font-medium text-gray-600">No notifications</p>
               <p className="text-xs text-gray-400 mt-1">You&apos;re all caught up!</p>
             </div>
-
           ) : (
-           
             notifications.map((notif) => (
               <div 
                 key={notif.id} 
