@@ -342,7 +342,7 @@ export async function markBookReturned(formData: FormData) {
   const borrowingId = formData.get("borrowingId") as string;
   if (!borrowingId) throw new Error("Missing borrowing ID");
 
-  
+
   const { data: borrowing, error: fetchError } = await supabase
     .from("borrowings")
     .select("id, book_id, status")
@@ -354,11 +354,12 @@ export async function markBookReturned(formData: FormData) {
     throw new Error(`Borrowing record not found: ${fetchError?.message || 'Unknown error'}`);
   }
 
+
   if (borrowing.status === "returned") {
     throw new Error("This book has already been returned");
   }
 
-
+ 
   const { error: borrowError } = await supabase
     .from("borrowings")
     .update({
@@ -395,6 +396,4 @@ export async function markBookReturned(formData: FormData) {
   revalidatePath("/admin/borrowed");
   revalidatePath("/admin/books");
   revalidatePath("/protected/dashboard");
-  
-  return { success: true };
 }
