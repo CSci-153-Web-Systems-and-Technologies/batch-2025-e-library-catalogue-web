@@ -86,7 +86,7 @@ export function LoginForm({
         </button>
       
         <div className="w-full max-w-md flex flex-col items-center" {...props}>
-          <BookOpen className="h-12 w-12 text-gray-900 mb-4"/>
+          <BookOpen className="w-24 h-24 text-gray-900 mb-6 mt-2" />
        
           <Card className="w-full border-0 shadow-none">
             <CardHeader className="space-y-1 text-center">
@@ -97,8 +97,7 @@ export function LoginForm({
             </CardHeader>
 
             <CardContent>
-              <form onSubmit={handleLogin} className="space-y-6">
-                
+              <form onSubmit={handleLogin} className="space-y-6">               
                 <div className="grid gap-2">
                   <Label htmlFor="email" className="text-gray-900 font-semibold">Email</Label>
                   <Input
