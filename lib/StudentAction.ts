@@ -22,18 +22,40 @@ export async function reserveBook(bookId: string, date: Date) {
   if (!user) throw new Error("Not authenticated");
 
   const dateStr = date.toISOString().split('T')[0];
-  
-  const { data: existing } = await supabase
+  const requestedTime = new Date(dateStr).getTime();
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+  const LOAN_PERIOD = 7 * ONE_DAY;
+
+  const { data: activeReservations } = await supabase
     .from('reservations')
-    .select('id')
+    .select('reservation_date')
     .eq('book_id', bookId)
-    .eq('reservation_date', dateStr)
-    .neq('status', 'cancelled')
+    .neq('status', 'cancelled');
+
+  const isBlockedByReservation = activeReservations?.some((res) => {
+    const existingTime = new Date(res.reservation_date).getTime();
+    const difference = Math.abs(requestedTime - existingTime);
+    return difference < LOAN_PERIOD; 
+  });
+
+  if (isBlockedByReservation) {
+    return { error: "This book is already reserved by someone else for this week." };
+  }
+
+  const { data: activeBorrowing } = await supabase
+    .from('borrowings')
+    .select('due_date')
+    .eq('book_id', bookId)
+    .eq('status', 'borrowed')
     .single();
 
-  if (existing) {
-    return { error: "This date is already reserved by someone else." };
+  if (activeBorrowing) {
+    const dueTime = new Date(activeBorrowing.due_date).getTime();
+    if (requestedTime < dueTime) {
+       return { error: `This book is currently borrowed until ${new Date(activeBorrowing.due_date).toLocaleDateString()}.` };
+    }
   }
+
   const { error } = await supabase.from('reservations').insert({
     user_id: user.id,
     book_id: bookId,
@@ -46,36 +68,95 @@ export async function reserveBook(bookId: string, date: Date) {
     return { error: "Failed to create reservation" };
   }
 
+  const { data: book } = await supabase
+    .from('book')
+    .select('Title')
+    .eq('id', bookId)
+    .single();
+  const bookTitle = book?.Title || 'the book';
+
+  await supabase.from('notifications').insert({
+    user_id: user.id,
+    title: "Reservation Confirmed",
+    message: `You have successfully reserved "${bookTitle}". Please pick it up on ${dateStr}.`,
+    is_read: false
+  });
+
   revalidatePath('/protected/dashboard');
   return { success: true };
 }
-
 export async function placeHold(bookId: string) {
   const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { count } = await supabase
-    .from('reservations')
-    .select('*', { count: 'exact', head: true })
-    .eq('book_id', bookId)
-    .eq('status', 'pending'); 
 
-  if (count && count > 0) {
-    return { error: "This book is already on hold for another student." };
+  let baseDate = new Date(); 
+  let queuePosition = 1;
+
+
+  const { data: lastReservation } = await supabase
+    .from('reservations')
+    .select('reservation_date')
+    .eq('book_id', bookId)
+    .eq('status', 'pending')
+    .order('reservation_date', { ascending: false }) 
+    .limit(1)
+    .single();
+
+  const { data: currentBorrowing } = await supabase
+    .from('borrowings')
+    .select('borrow_date')
+    .eq('book_id', bookId)
+    .eq('status', 'borrowed')
+    .single();
+
+  if (lastReservation) {
+   
+    baseDate = new Date(lastReservation.reservation_date);
+    
+    const { count } = await supabase
+      .from('reservations')
+      .select('*', { count: 'exact', head: true })
+      .eq('book_id', bookId)
+      .eq('status', 'pending');
+    queuePosition = (count || 0) + 1;
+
+  } else if (currentBorrowing) {
+    
+    baseDate = new Date(currentBorrowing.borrow_date);
+    queuePosition = 1;
   }
 
+  
+  baseDate.setDate(baseDate.getDate() + 10);
+  const holdDateStr = baseDate.toISOString().split('T')[0];
+
+ 
   const { error } = await supabase.from('reservations').insert({
     user_id: user.id,
     book_id: bookId,
-    reservation_date: new Date().toISOString().split('T')[0], 
+    reservation_date: holdDateStr,
+    status: 'pending'
   });
 
   if (error) {
     console.error("Hold error:", error);
     return { error: "Failed to place hold." };
   }
+
+  
+  const { data: book } = await supabase.from('book').select('Title').eq('id', bookId).single();
+  const bookTitle = book?.Title || 'the book';
+
+  await supabase.from('notifications').insert({
+    user_id: user.id,
+    title: "Hold Scheduled",
+    
+    message: `Success! You are #${queuePosition} in line for "${bookTitle}". Reserved for: ${holdDateStr}.`,
+    is_read: false
+  });
 
   revalidatePath('/protected/dashboard');
   return { success: true };
