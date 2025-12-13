@@ -7,7 +7,6 @@ export default function AddBookPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Link 
           href="/admin/books"
@@ -21,11 +20,9 @@ export default function AddBookPage() {
         </div>
       </div>
 
-      {/* Form Card */}
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
         <form action={addBook} className="space-y-6">
           
-          {/* Row 1: Title & Author */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label htmlFor="title" className="text-sm font-bold text-slate-700 flex items-center gap-2">
@@ -56,7 +53,6 @@ export default function AddBookPage() {
             </div>
           </div>
 
-          {/* Row 2: Genre & ISBN */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label htmlFor="genre" className="text-sm font-bold text-slate-700 flex items-center gap-2">
@@ -66,7 +62,7 @@ export default function AddBookPage() {
                 name="genre"
                 id="genre"
                 required
-                defaultValue="" // FIXED: Use defaultValue here instead of 'selected' on option
+                defaultValue="" 
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all appearance-none"
               >
                 <option value="" disabled>Select a genre...</option>

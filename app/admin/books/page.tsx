@@ -3,22 +3,20 @@ import { Search, ChevronDown, Edit, Trash2, Plus, ChevronLeft, ChevronRight } fr
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-// Define props to access URL parameters (e.g., ?page=2)
 interface PageProps {
   searchParams: Promise<{ page?: string; query?: string }>;
 }
 
 export default async function BookManagement({ searchParams }: PageProps) {
-  // 1. Parse Parameters
+
   const params = await searchParams;
   const currentPage = Number(params.page) || 1;
   const searchQuery = params.query || '';
   const ITEMS_PER_PAGE = 5;
 
-  // 2. Fetch Data
+
   const { books, totalPages } = await getAllBooks(currentPage, ITEMS_PER_PAGE, searchQuery);
 
-  // Safety: Redirect if page is out of bounds (and not empty search)
   if (currentPage > 1 && books.length === 0 && currentPage > totalPages) {
     redirect('/admin/books?page=1');
   }
@@ -26,9 +24,9 @@ export default async function BookManagement({ searchParams }: PageProps) {
   return (
     <div className="space-y-6">
       
-      {/* Top Controls: Search & Filter */}
+     
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        {/* Search Bar */}
+       
         <div className="relative w-full sm:w-96">
           <input 
             type="text" 
@@ -39,16 +37,15 @@ export default async function BookManagement({ searchParams }: PageProps) {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
         </div>
 
-        {/* Right Actions */}
+     
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <button className="flex items-center gap-2 bg-white px-5 py-2.5 rounded-full border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
             All Books
             <ChevronDown className="h-4 w-4 text-gray-400" />
           </button>
           
-          {/* UPDATED LINK: Points to your 'addbook' folder */}
           <Link 
-            href="/admin/books/addbook"
+            href="/admin/books/add-book"
             className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-full text-sm font-bold hover:opacity-80 transition-opacity"
           >
             <Plus className="h-4 w-4" />
@@ -57,11 +54,9 @@ export default async function BookManagement({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {/* Books Table */}
       <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col min-h-[400px]">
         <div className="overflow-x-auto flex-1">
           <table className="w-full text-left text-sm">
-            {/* Green Header */}
             <thead className="bg-[#00FF9D] text-gray-900">
               <tr>
                 <th className="px-6 py-4 font-bold text-sm">Title</th>
@@ -110,14 +105,12 @@ export default async function BookManagement({ searchParams }: PageProps) {
           </table>
         </div>
 
-        {/* --- PAGINATION CONTROLS --- */}
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/30 flex items-center justify-between">
           <p className="text-xs text-gray-500 font-medium">
             Page <span className="text-gray-900 font-bold">{currentPage}</span> of <span className="text-gray-900 font-bold">{totalPages || 1}</span>
           </p>
 
           <div className="flex items-center gap-2">
-            {/* Previous Button */}
             <Link
               href={`/admin/books?page=${currentPage - 1}`}
               className={`flex items-center gap-1 px-4 py-2 rounded-full text-xs font-bold transition-all ${
@@ -130,7 +123,6 @@ export default async function BookManagement({ searchParams }: PageProps) {
               Prev
             </Link>
 
-            {/* Next Button */}
             <Link
               href={`/admin/books?page=${currentPage + 1}`}
               className={`flex items-center gap-1 px-4 py-2 rounded-full text-xs font-bold transition-all ${
