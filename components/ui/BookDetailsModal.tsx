@@ -22,11 +22,11 @@ export function BookDetailsModal({ isOpen, onClose, book }: BookDetailsModalProp
 
   if (!isOpen) return null;
 
-  // --- DEFINITIONS (Fixing your error) ---
-  const isAvailable = book.status === 'available';
-  const isBorrowed = book.status === 'borrowed'; // <--- THIS WAS MISSING
   
-  // Logic: Show calendar if available OR reserved (since reserved books might be free next week)
+  const isAvailable = book.status === 'available';
+  const isBorrowed = book.status === 'borrowed'; 
+  
+ 
   const showReserveCalendar = isAvailable || book.status === 'reserved';
 
   const getStatusBadge = () => {
@@ -47,7 +47,7 @@ export function BookDetailsModal({ isOpen, onClose, book }: BookDetailsModalProp
 
       <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 slide-in-from-bottom-2 duration-200">
         
-        {/* Header */}
+        
         <div className="relative px-6 pt-8 pb-6 bg-gradient-to-b from-gray-50/50 to-white border-b border-gray-100">
            <button onClick={onClose} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"><X className="h-5 w-5" /></button>
            <div className="flex gap-4">
@@ -65,7 +65,7 @@ export function BookDetailsModal({ isOpen, onClose, book }: BookDetailsModalProp
            </div>
         </div>
 
-        {/* Body */}
+    
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
            <div className="grid grid-cols-2 gap-4">
              <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
@@ -83,26 +83,23 @@ export function BookDetailsModal({ isOpen, onClose, book }: BookDetailsModalProp
            </div>
         </div>
 
-        {/* Footer */}
         <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex gap-3 justify-end">
           <Button variant="outline" onClick={onClose} className="border-gray-200 text-gray-700 hover:bg-white">Cancel</Button>
           
           {showReserveCalendar ? (
-            // Option 1: Reserve (Calendar)
+            
             <BookReservationDialog 
               bookId={book.id} 
               bookTitle={book.title} 
-              className="px-6 shadow-sm bg-accent-teal hover:bg-teal-700 text-white" 
+              className="px-6 shadow-sm bg-teal-600 hover:bg-teal-700 text-white" 
             />
           ) : isBorrowed ? (
-            // Option 2: Hold (Waitlist) - Only if 'isBorrowed' is true
             <PlaceHoldDialog 
               bookId={book.id} 
               bookTitle={book.title} 
               className="px-6 shadow-sm bg-amber-500 hover:bg-amber-600 text-white border-amber-600"
             />
           ) : (
-            // Option 3: Fallback (Disabled)
             <Button disabled className="bg-gray-300 text-gray-500 cursor-not-allowed">
               Currently {book.status}
             </Button>
