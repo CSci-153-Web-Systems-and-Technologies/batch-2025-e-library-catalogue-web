@@ -95,6 +95,7 @@ export default async function ProtectedPage({ searchParams }: ProtectedPageProps
   return (
     <div className="flex flex-col min-h-svh w-full bg-gray-50">
       <DashboardWrapper
+        userId={authData.user.id}
         email={userEmail}
         booksResponse={booksResponse} 
       />
