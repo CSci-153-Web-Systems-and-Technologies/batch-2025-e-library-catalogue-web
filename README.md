@@ -84,7 +84,7 @@ The application relies on the following Supabase tables:
 
 1. **Clone the repository:**
     ```bash
-    git clone [https://github.com/yourusername/bookit.git](https://github.com/yourusername/bookit.git)
+    git clone https://github.com/CSci-153-Web-Systems-and-Technologies/batch-2025-e-library-catalogue-web.git
     cd bookit
     ```
 
@@ -131,7 +131,7 @@ The project is optimized for deployment on Vercel.
 
 | Environment | Status | Branch | URL |
 | :--- | :--- | :--- | :--- |
-| **Production** | 🟢 Live | `main` | [https://bookit.vercel.app](https://bookit.vercel.app) |
+| **Production** | 🟢 Live | `main` | https://batch-2025-e-library-catalogue-web-delta.vercel.app/ |
 | **Staging** | 🟡 Testing | `develop` | internal |
 
 ---
