@@ -110,7 +110,7 @@ Create a `.env.local` file in the root directory. You must configure these keys 
 | :--- | :--- | :--- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase Project URL | **Yes** |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase Public API Key | **Yes** |
-| `NEXT_PUBLIC_SITE_URL` | Production URL (e.g., https://bookit.vercel.app) | **Yes** |
+| `NEXT_PUBLIC_SITE_URL` | Production URL (https://batch-2025-e-library-catalogue-web-delta.vercel.app) | **Yes** |
 
 > ⚠️ **Security Note:** Never commit `.env.local` to version control.
 
@@ -131,7 +131,7 @@ The project is optimized for deployment on Vercel.
 
 | Environment | Status | Branch | URL |
 | :--- | :--- | :--- | :--- |
-| **Production** | 🟢 Live | `main` | https://batch-2025-e-library-catalogue-web-delta.vercel.app/ |
+| **Production** | 🟢 Live | `main` | https://batch-2025-e-library-catalogue-web-delta.vercel.app |
 | **Staging** | 🟡 Testing | `develop` | internal |
 
 ---
